@@ -30,19 +30,20 @@ class StopWach extends StatefulWidget {
 }
 
 class _StopWachState extends State<StopWach> {
-  int seconds = 0;
+  int milliseconds = 0;
   Timer? timer;
+  final laps = <int>[];
 
   @override
   void initState() {
     super.initState();
     timer = Timer.periodic(
-        const Duration(seconds: 1), (Timer t) => _incrementCounter());
+        const Duration(milliseconds: 1), (Timer t) => _incrementCounter());
   }
 
   void _incrementCounter() {
     setState(() {
-      seconds++;
+      milliseconds += 100;
     });
   }
 
@@ -50,12 +51,36 @@ class _StopWachState extends State<StopWach> {
   Widget build(BuildContext context) {
     bool isRunning = true;
 
-    void _startTimear() {
+    void _startTimer() {
       timer = Timer.periodic(
-          const Duration(seconds: 1), (Timer t) => _incrementCounter());
+          const Duration(milliseconds: 100), (Timer t) => _incrementCounter());
       setState(() {
         isRunning = true;
+        laps.clear();
       });
+    }
+
+    String _secondsText(int milliseconds) {
+      final seconds = milliseconds / 1000;
+      return '$seconds seconds';
+    }
+
+    @override
+    void dispose() {
+      timer?.cancel();
+      super.dispose();
+    }
+
+    Widget _lapList() {
+      return ListView.builder(
+          itemCount: laps.length,
+          itemBuilder: (BuildContext context, int index) {
+            final lap = laps[index];
+            return ListTile(
+              title: Text('Lap ${index + 1}'),
+              trailing: Text(_secondsText(lap)),
+            );
+          });
     }
 
     void _stopTimer() {
@@ -65,44 +90,57 @@ class _StopWachState extends State<StopWach> {
       });
     }
 
-    String _seconds() {
-      if (seconds == 1) {
+    String _milliseconds() {
+      if (milliseconds == 1) {
         return 'second';
       } else {
-        return 'seconds';
+        return 'milliseconds';
       }
+    }
+
+    void _lap() {
+      setState(() {
+        laps.add(milliseconds);
+        milliseconds = 0;
+      });
     }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$seconds ${_seconds()}',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: isRunning ? null : _startTimear,
-                  child: const Text('Start'),
-                ),
-                TextButton(
-                  onPressed: isRunning ? _stopTimer : null,
-                  child: const Text('Stop'),
-                ),
-              ],
-            )
-          ],
-        ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            'Lap ${laps.length + 1}',
+            style: const TextStyle(fontSize: 20),
+          ),
+          Text(
+            _secondsText(milliseconds),
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: isRunning ? null : _startTimer,
+                child: const Text('Start'),
+              ),
+              ElevatedButton(
+                  style: ButtonStyle(
+                      backgroundColor:
+                          MaterialStateProperty.all<Color>(Colors.yellow)),
+                  onPressed: isRunning ? _lap : null,
+                  child: const Text('Lap')),
+              TextButton(
+                onPressed: isRunning ? _stopTimer : null,
+                child: const Text('Stop'),
+              ),
+            ],
+          ),
+          Expanded(child: _lapList())
+        ],
       ),
     );
   }
